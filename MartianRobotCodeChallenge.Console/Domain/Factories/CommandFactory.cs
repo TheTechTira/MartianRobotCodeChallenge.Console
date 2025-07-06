@@ -1,4 +1,5 @@
-﻿using MartianRobotCodeChallenge.Console.Domain.Interfaces;
+﻿using MartianRobotCodeChallenge.Console.Domain.Commands;
+using MartianRobotCodeChallenge.Console.Domain.Interfaces;
 
 namespace MartianRobotCodeChallenge.Console.Domain.Factories
 {
