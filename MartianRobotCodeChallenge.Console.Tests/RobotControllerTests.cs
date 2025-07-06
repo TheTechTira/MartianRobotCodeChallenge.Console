@@ -92,5 +92,98 @@ namespace MartianRobotCodeChallenge.Console.Tests
     }
 
     #endregion
+
+    #region SCENT LOGIC
+
+    /// <summary>
+    /// Verifies that when a robot is lost by moving off the grid, it leaves a "scent" at the last safe position and direction.
+    /// This scent prevents subsequent robots from being lost at the same grid position and orientation.
+    /// The second robot stops safely at the last in-bounds cell rather than being lost.
+    /// </summary>
+    [Fact]
+    public void Robot_Lost_Leaves_Scent_Prevents_Other_Losses()
+    {
+      var grid = new Grid(5, 3);
+      var controller = new RobotController(grid, new CommandFactory());
+
+      // First robot starts at (3,2) facing North and is lost after moving off the grid.
+      var robot1 = new Robot(3, 2, EnumDirection.N);
+      var result1 = controller.RunRobot(robot1, "FRRFLLFFRRFLL");
+
+      // Assert: Robot1 is lost at (3,3,N) and leaves a scent at that position/direction.
+      Assert.Equal(3, result1.Position.X);
+      Assert.Equal(3, result1.Position.Y);
+      Assert.Equal(EnumDirection.N, result1.Facing);
+      Assert.True(result1.IsLost);
+
+      // Second robot starts at the same spot, same orientation, repeats the same sequence.
+      var robot2 = new Robot(3, 2, EnumDirection.N);
+      var result2 = controller.RunRobot(robot2, "FRRFLLFFRRFLL");
+
+      // Assert: Robot2 is NOT lost (scent prevents it), and stops at last valid cell (3,2,N).
+      Assert.Equal(3, result2.Position.X);
+      Assert.Equal(2, result2.Position.Y);
+      Assert.Equal(EnumDirection.N, result2.Facing);
+      Assert.False(result2.IsLost);
+    }
+
+    /// <summary>
+    /// Proves that scents are direction-specific: 
+    /// if a robot is lost moving off the grid in one direction from a position,
+    /// another robot moving off from the same position but in a different direction will still be lost.
+    /// This prevents over-protection from scents and matches problem requirements.
+    /// </summary>
+    [Fact]
+    public void Scent_Is_Direction_Specific()
+    {
+      var grid = new Grid(0, 0);
+      var controller = new RobotController(grid, new CommandFactory());
+
+      // Robot1 at (0,0), facing North, moves forward and is lost; scent left at (0,0,N).
+      var lostRobot = new Robot(0, 0, EnumDirection.N);
+      controller.RunRobot(lostRobot, "F");
+      Assert.True(lostRobot.IsLost);
+
+      // Robot2 at same position but facing East, moves forward and should ALSO be lost, 
+      // since scent does not apply to East direction.
+      var eastRobot = new Robot(0, 0, EnumDirection.E);
+      var result = controller.RunRobot(eastRobot, "F");
+      Assert.True(result.IsLost);
+    }
+
+    /// <summary>
+    /// Confirms that scents are tracked independently per position and per direction,
+    /// even for repeated or multiple loss events. Demonstrates that a scent left for (2,2,N)
+    /// does not protect against loss going East, but does protect subsequent North moves,
+    /// and vice versa. Repeating moves in previously scented directions no longer causes loss.
+    /// </summary>
+    [Fact]
+    public void Scent_At_Border_Is_Direction_Specific()
+    {
+      var grid = new Grid(2, 2);
+      var controller = new RobotController(grid, new CommandFactory());
+
+      // Robot lost moving North from (2,2); leaves scent for (2,2,N)
+      var northRobot = new Robot(2, 2, EnumDirection.N);
+      controller.RunRobot(northRobot, "F");
+      Assert.True(northRobot.IsLost);
+
+      // Robot lost moving East from (2,2); leaves scent for (2,2,E)
+      var eastRobot = new Robot(2, 2, EnumDirection.E);
+      controller.RunRobot(eastRobot, "F");
+      Assert.True(eastRobot.IsLost);
+
+      // Repeat North move from (2,2) - scent prevents loss
+      var repeatNorthRobot = new Robot(2, 2, EnumDirection.N);
+      var repeatResult = controller.RunRobot(repeatNorthRobot, "F");
+      Assert.False(repeatResult.IsLost);
+
+      // Repeat East move from (2,2) - scent prevents loss
+      var repeatEastRobot = new Robot(2, 2, EnumDirection.E);
+      var repeatEastResult = controller.RunRobot(repeatEastRobot, "F");
+      Assert.False(repeatEastResult.IsLost);
+    }
+
+    #endregion
   }
 }
