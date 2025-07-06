@@ -2,6 +2,7 @@
 using MartianRobotCodeChallenge.Console.Domain.Entities;
 using MartianRobotCodeChallenge.Console.Domain.Enums;
 using MartianRobotCodeChallenge.Console.Domain.Factories;
+using MartianRobotCodeChallenge.Console.Domain.ValueObjects;
 
 Console.WriteLine("== Martian Robots ==");
 
@@ -102,7 +103,9 @@ while (true)
         $"Result: {runRobotResult.Position.X} {runRobotResult.Position.Y} {runRobotResult.Facing}\n" +
         $"  -> Robot completed its instructions and is safe at ({runRobotResult.Position.X}, {runRobotResult.Position.Y}) facing {runRobotResult.Facing}.\n");
     Console.ResetColor();
-  }  
+  }
+
+  PrintGrid(grid, runRobotResult.Position, runRobotResult.Facing, runRobotResult.IsLost);
 }
 
 Console.ForegroundColor = ConsoleColor.Cyan;
@@ -138,4 +141,60 @@ bool IsValidInstructions(string instructions, out string error)
 
   error = "";
   return true;
+}
+
+void PrintGrid(Grid grid, Position robotPosition, EnumDirection robotDir, bool robotLost)
+{
+  // Map directions to grid symbols
+  var dirSymbol = new Dictionary<EnumDirection, char>
+  {
+    [EnumDirection.N] = '^',
+    [EnumDirection.E] = '>',
+    [EnumDirection.S] = 'v',
+    [EnumDirection.W] = '<'
+  };
+
+  Console.WriteLine("Grid state (top is North):");
+  for (int y = grid.MaxY; y >= 0; y--)
+  {
+    for (int x = 0; x <= grid.MaxX; x++)
+    {
+      // Draw the robot
+      if (robotPosition.X == x && robotPosition.Y == y)
+      {
+        if (robotLost)
+        {
+          Console.ForegroundColor = ConsoleColor.Yellow;
+          Console.Write("X "); // Lost robot
+        }
+        else
+        {
+          Console.ForegroundColor = ConsoleColor.Green;
+          Console.Write("R "); // Active robot
+        }
+        Console.ResetColor();
+        continue;
+      }
+
+      // Draw a scent (if any) at this position/direction
+      bool isScent = false;
+      foreach (var dir in Enum.GetValues<EnumDirection>())
+      {
+        if (grid.HasScent(x, y, dir))
+        {
+          Console.ForegroundColor = ConsoleColor.Red;
+          Console.Write(dirSymbol[dir] + " ");
+          Console.ResetColor();
+          isScent = true;
+          break; // Only show one
+        }
+      }
+      if (isScent) continue;
+
+      // Empty cell
+      Console.Write(". ");
+    }
+    Console.WriteLine();
+  }
+  Console.WriteLine();
 }
