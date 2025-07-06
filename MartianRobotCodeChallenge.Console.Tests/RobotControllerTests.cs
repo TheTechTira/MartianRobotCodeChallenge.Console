@@ -410,5 +410,59 @@ namespace MartianRobotCodeChallenge.Console.Tests
     }
 
     #endregion
+
+    #region EXTENSIBILITY (TDD/CI)
+
+    /// <summary>
+    /// TDD-style (red/green) test demonstrating how to drive the implementation of a new command ("B" for Backward).
+    /// It ensures that the command pattern allows new instructions to be added with minimal changes to existing code.
+    /// 
+    /// IMPORTANT: This test will fail until a BackwardCommand is implemented and registered in the CommandFactory.
+    /// 
+    /// </summary>
+    [Fact]
+    public void Robot_Can_Move_Backward_When_BackwardCommand_Added_ForTDD()
+    {
+      var grid = new Grid(5, 3);
+      var factory = new CommandFactory();
+      var controller = new RobotController(grid, factory);
+      var robot = new Robot(2, 2, EnumDirection.N);
+
+      // Act: Try to move backward; this will only pass after BackwardCommand is supported.
+      var result = controller.RunRobot(robot, "B");
+
+      // Assert: The robot should have moved one step backward (to 2,1) facing North, and not be lost.
+      // (NOTE: This test should initially fail, guiding the implementation of BackwardCommand.)
+      Assert.Equal(2, result.Position.X);
+      Assert.Equal(1, result.Position.Y);
+      Assert.Equal(EnumDirection.N, result.Facing);
+      Assert.False(result.IsLost);
+    }
+
+    /// <summary>
+    /// CI-safe test for extensibility: Ensures that issuing an unsupported command ('B' for Backward)
+    /// throws an ArgumentException, maintaining green builds in your pipeline until the feature is added.
+    /// Once BackwardCommand is implemented, this test can be updated to assert the robot's new position instead.
+    /// </summary>
+    [Fact]
+    public void Robot_Can_Move_Backward_When_BackwardCommand_Added_ForCI()
+    {
+      var grid = new Grid(5, 3);
+      var factory = new CommandFactory();
+      var controller = new RobotController(grid, factory);
+      var robot = new Robot(2, 2, EnumDirection.N);
+
+      // Act & Assert: Until BackwardCommand is implemented, this should throw an exception.
+      Assert.Throws<ArgumentException>(() => controller.RunRobot(robot, "B"));
+
+      // When BackwardCommand is implemented, replace above line with:
+      // var result = controller.RunRobot(robot, "B");
+      // Assert.Equal(2, result.Position.X);
+      // Assert.Equal(1, result.Position.Y);
+      // Assert.Equal(EnumDirection.N, result.Facing);
+      // Assert.False(result.IsLost);
+    }
+
+    #endregion    
   }
 }
