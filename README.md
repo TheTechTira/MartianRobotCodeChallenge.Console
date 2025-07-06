@@ -205,3 +205,11 @@ If you have feedback or would like to see more advanced features — let me know
 
 
 ### Happy coding! 🚀
+
+---
+
+## Branch History and Merges:
+
+![image](https://github.com/user-attachments/assets/c9099d2f-488f-4f12-905d-264827835607)
+
+Can also be viewed here: https://github.com/TheTechTira/MartianRobotCodeChallenge.Console/network
