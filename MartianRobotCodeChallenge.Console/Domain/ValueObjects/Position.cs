@@ -1,17 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MartianRobotCodeChallenge.Console.Domain.ValueObjects
+﻿namespace MartianRobotCodeChallenge.Console.Domain.ValueObjects
 {
+  /// <summary>
+  /// Represents a point (X, Y) on the Martian grid.
+  /// Designed as a value object for coordinate comparison and grid logic.
+  /// </summary>
   public class Position : IEquatable<Position>
   {
-    /// The X coordinate (column).
+    /// <summary>The X coordinate (column).</summary>
     public int X { get; set; }
 
-    /// The Y coordinate (row).
+    /// <summary>The Y coordinate (row).</summary>
     public int Y { get; set; }
 
     public Position(int x, int y)

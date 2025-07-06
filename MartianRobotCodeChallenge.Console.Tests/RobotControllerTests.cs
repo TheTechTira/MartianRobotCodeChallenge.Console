@@ -4,14 +4,15 @@ using MartianRobotCodeChallenge.Console.Domain.Enums;
 using MartianRobotCodeChallenge.Console.Domain.Factories;
 using MartianRobotCodeChallenge.Console.Domain.Interfaces;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MartianRobotCodeChallenge.Console.Tests
 {
+  /// <summary>
+  /// Comprehensive unit tests for the Martian Robots domain and application layers.
+  /// Combines basic and advanced scenarios, including movement, scent logic, validation,
+  /// command extensibility, and boundary cases. 
+  /// Designed to regression-test all critical rules and demonstrate clean architecture.
+  /// </summary>
   public class RobotControllerTests
   {
     #region BASIC MOVEMENT AND GRID LOGIC
