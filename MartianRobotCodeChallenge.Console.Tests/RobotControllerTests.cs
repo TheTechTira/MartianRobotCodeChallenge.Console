@@ -2,6 +2,8 @@
 using MartianRobotCodeChallenge.Console.Domain.Entities;
 using MartianRobotCodeChallenge.Console.Domain.Enums;
 using MartianRobotCodeChallenge.Console.Domain.Factories;
+using MartianRobotCodeChallenge.Console.Domain.Interfaces;
+using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -371,6 +373,40 @@ namespace MartianRobotCodeChallenge.Console.Tests
       Assert.Equal(2, result.Position.Y);
       Assert.Equal(EnumDirection.N, result.Facing);
       Assert.False(result.IsLost);
+    }
+
+    #endregion
+
+    #region COMMAND PATTERN EXTENSIBILITY/MOCKING
+
+    /// <summary>
+    /// Verifies that the RobotController uses the provided ICommandFactory to create commands, rather than hardcoding command logic.
+    /// This enables extensibility (adding new commands via the factory) and testability (using mocks).
+    /// 
+    /// The test injects a mocked ICommandFactory, which returns a dummy command for any input.
+    /// It then runs the robot with a single instruction, and verifies that the factory's Create method was called with the correct character.
+    /// This proves that the controller is properly decoupled from command creation and can support future extensibility.
+    /// </summary>
+    [Fact]
+    public void RobotController_Uses_Provided_CommandFactory()
+    {
+      // Arrange: Set up a 5x3 grid and a mock ICommandFactory.
+      var grid = new Grid(5, 3);
+      var mockFactory = new Mock<ICommandFactory>();
+      // For any character, return a mock ICommand (the actual command logic doesn't matter for this test).
+      mockFactory.Setup(f => f.Create(It.IsAny<char>()))
+                 .Returns(new Mock<ICommand>().Object);
+
+      // Inject the mock factory into the controller.
+      var controller = new RobotController(grid, mockFactory.Object);
+      var robot = new Robot(1, 1, EnumDirection.N);
+
+      // Act: Run the robot with a single 'F' (forward) command.
+      controller.RunRobot(robot, "F");
+
+      // Assert: Verify that the factory's Create method was called exactly once for 'F'.
+      // This demonstrates that command creation is delegated to the factory.
+      mockFactory.Verify(f => f.Create('F'), Times.Once());
     }
 
     #endregion
