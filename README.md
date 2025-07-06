@@ -189,11 +189,19 @@ All public classes and methods are documented using XML comments.
 
 ---
 
+## ⏱️ From Start to Finish
+
+- Core coding and design: **~1 hour** (if you subtract coffee breaks)
+- Total elapsed time with caffeine and interruptions: **1 hour 26 minutes**
+
+Great problems—and good coffee—make for productive coding!
+
 ## 🎉 Closing Thoughts
 This code challenge was a fun opportunity to demonstrate robust C# design, architecture, and testing approaches.
 
 I enjoyed bringing Martian Robots to life and ensuring the solution is clear, extensible, and easy to maintain.
 
 If you have feedback or would like to see more advanced features — let me know
+
 
 ### Happy coding! 🚀
