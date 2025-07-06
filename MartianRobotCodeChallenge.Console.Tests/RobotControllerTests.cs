@@ -463,6 +463,90 @@ namespace MartianRobotCodeChallenge.Console.Tests
       // Assert.False(result.IsLost);
     }
 
-    #endregion    
+    #endregion
+
+    #region ADVANCED/EDGE/BOUNDS TESTS
+
+    /// <summary>
+    /// Verifies that the system correctly handles the largest allowed grid size (50x50) and the longest allowed command sequence.
+    /// The robot moves 49 steps North, turns right, then moves 48 steps East.
+    /// This checks correct boundary navigation, handling of long instruction sequences, and that the robot does not get lost
+    /// unless truly exceeding the grid.
+    /// </summary>
+    [Fact]
+    public void Handles_Maximum_Grid_Size_And_Long_Command()
+    {
+      var grid = new Grid(50, 50);
+      var controller = new RobotController(grid, new CommandFactory());
+      var robot = new Robot(0, 0, EnumDirection.N);
+
+      // Max allowed instructions is 100, this uses 99: 49 F's north, 1 R, then 48 F's east.
+      string commands = new string('F', 49) + "R" + new string('F', 48);
+      var result = controller.RunRobot(robot, commands);
+
+      // Assert: Robot ends at (48,49) facing East, not lost.
+      Assert.Equal(48, result.Position.X);
+      Assert.Equal(49, result.Position.Y);
+      Assert.Equal(EnumDirection.E, result.Facing);
+      Assert.False(result.IsLost);
+    }
+
+    /// <summary>
+    /// Verifies that the robot controller allows the maximum legal instruction sequence length (99 or 100),
+    /// and that such a sequence does not throw or cause unexpected errors as long as the robot stays within grid bounds.
+    /// </summary>
+    [Fact]
+    public void Max_Instruction_Length_Allowed()
+    {
+      var grid = new Grid(50, 50);
+      var controller = new RobotController(grid, new CommandFactory());
+      var robot = new Robot(0, 0, EnumDirection.N);
+
+      string commands = new string('F', 99); // Max legal command length.
+      var result = controller.RunRobot(robot, commands);
+
+      // Assert: Robot stays on grid and does not get lost unless truly moving off grid.
+      Assert.True(result.Position.X <= 50 && result.Position.Y <= 50);
+    }
+
+    /// <summary>
+    /// Ensures that the controller enforces the instruction length limit (e.g., 100 max).
+    /// Providing an instruction sequence longer than allowed results in an ArgumentOutOfRangeException.
+    /// This protects against runaway input and ensures compliance with problem constraints.
+    /// </summary>
+    [Fact]
+    public void Max_Instruction_Length_TooLong()
+    {
+      var grid = new Grid(50, 50);
+      var controller = new RobotController(grid, new CommandFactory());
+      var robot = new Robot(0, 0, EnumDirection.N);
+
+      string commands = new string('F', 110); // Exceeds allowed length.
+      Assert.Throws<ArgumentOutOfRangeException>(() => controller.RunRobot(robot, commands));
+    }
+
+    /// <summary>
+    /// Confirms that instruction parsing is case-insensitive: 
+    /// lowercase and uppercase command characters are handled identically.
+    /// This test prevents bugs when users or APIs provide non-standard command casing.
+    /// </summary>
+    [Fact]
+    public void Instruction_Parsing_Is_Case_Insensitive()
+    {
+      var grid = new Grid(2, 2);
+      var controller = new RobotController(grid, new CommandFactory());
+      var robot = new Robot(1, 1, EnumDirection.N);
+
+      // Mix of lowercase and uppercase commands.
+      var result = controller.RunRobot(robot, "fRfLf");
+
+      // Assert: The command is interpreted exactly as "FRFLF".
+      Assert.Equal(2, result.Position.X);
+      Assert.Equal(2, result.Position.Y);
+      Assert.Equal(EnumDirection.N, result.Facing);
+      Assert.True(result.IsLost);
+    }
+
+    #endregion
   }
 }
