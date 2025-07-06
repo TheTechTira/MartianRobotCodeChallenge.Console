@@ -6,7 +6,7 @@ A C#/.NET 8 solution for the classic Martian Robots problem, demonstrating clean
 
 ## 🛰️ Overview
 
-This project models a swarm of robots exploring a rectangular grid on Mars. Robots execute command sequences (`L`, `R`, `F`) to navigate the grid, avoid getting lost, and leave “scents” to protect future robots from falling off at the same location and orientation. The code is designed for clarity, robustness, and easy extension (Command Pattern).
+This project models a swarm of robots exploring a rectangular grid on Mars. Robots execute command sequences (`L`, `R`, `F`) to navigate the grid, avoid getting lost, and leave “scents” to protect future robots from falling off at the same location and orientation. The code is designed for clarity, robustness, and easy extension (Command and Factory Pattern).
 
 ---
 
