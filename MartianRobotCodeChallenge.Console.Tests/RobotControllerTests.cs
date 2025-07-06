@@ -185,5 +185,194 @@ namespace MartianRobotCodeChallenge.Console.Tests
     }
 
     #endregion
+
+    #region VALIDATION AND BOUNDARY TESTS
+
+    /// <summary>
+    /// Ensures that the grid constructor enforces dimension constraints:
+    /// The maximum value for any coordinate is 50, and both X and Y must be non-negative.
+    /// Creating a grid outside these bounds throws an ArgumentOutOfRangeException.
+    /// </summary>
+    [Theory]
+    [InlineData(-1, 3)]
+    [InlineData(5, -2)]
+    [InlineData(51, 2)]
+    [InlineData(2, 100)]
+    public void Grid_Throws_On_Invalid_Dimensions(int maxX, int maxY)
+    {
+      // Act & Assert: Creating an invalid grid should throw.
+      Assert.Throws<ArgumentOutOfRangeException>(() => new Grid(maxX, maxY));
+    }
+
+    /// <summary>
+    /// Ensures that a robot cannot start outside the grid boundaries.
+    /// If a robot is placed at coordinates outside the grid, the controller throws an ArgumentException.
+    /// This is defensive logic to prevent invalid simulation states.
+    /// </summary>
+    [Theory]
+    [InlineData(6, 2, EnumDirection.E, "F")]  // X out of bounds
+    [InlineData(2, 4, EnumDirection.N, "F")]  // Y out of bounds
+    [InlineData(-1, 0, EnumDirection.S, "F")] // Negative X
+    [InlineData(0, -1, EnumDirection.W, "F")] // Negative Y
+    public void Controller_Throws_On_Invalid_Robot_Start(int startX, int startY, EnumDirection startDir, string instructions)
+    {
+      var grid = new Grid(5, 3);
+      var controller = new RobotController(grid, new CommandFactory());
+      var robot = new Robot(startX, startY, startDir);
+
+      // Act & Assert: Starting a robot outside the grid should throw.
+      Assert.Throws<ArgumentException>(() => controller.RunRobot(robot, instructions));
+    }
+
+    /// <summary>
+    /// Verifies that RobotRunResult exposes the final robot state correctly as properties.
+    /// This is not only for tuple-based output but also for consuming application code or UI needs.
+    /// </summary>
+    [Fact]
+    public void RobotRunResult_Properties_Are_Correct()
+    {
+      var grid = new Grid(2, 2);
+      var controller = new RobotController(grid, new CommandFactory());
+      var robot = new Robot(0, 0, EnumDirection.N);
+
+      // Move forward twice (to 0,2,N), turn right (now facing E).
+      var result = controller.RunRobot(robot, "FFR");
+
+      // Assert: Properties match final state.
+      Assert.Equal(0, result.Position.X);
+      Assert.Equal(2, result.Position.Y);
+      Assert.Equal(EnumDirection.E, result.Facing);
+      Assert.False(result.IsLost);
+    }
+
+    /// <summary>
+    /// Ensures that empty or whitespace-only instruction sequences do not alter the robot's position or state.
+    /// The robot remains at its initial position and orientation, and is not lost.
+    /// </summary>
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Empty_Or_Whitespace_Instruction_Sequence(string commands)
+    {
+      var grid = new Grid(3, 3);
+      var controller = new RobotController(grid, new CommandFactory());
+      var robot = new Robot(2, 2, EnumDirection.W);
+
+      // Run with empty or whitespace string.
+      var result = controller.RunRobot(robot, commands);
+
+      // Assert: Robot hasn't moved and isn't lost.
+      Assert.Equal(2, result.Position.X);
+      Assert.Equal(2, result.Position.Y);
+      Assert.Equal(EnumDirection.W, result.Facing);
+      Assert.False(result.IsLost);
+    }
+
+    /// <summary>
+    /// Confirms that a robot ignores any remaining instructions after it becomes lost.
+    /// After falling off the grid, further commands are not executed, ensuring the simulation halts loss propagation.
+    /// </summary>
+    [Fact]
+    public void Robot_Ignores_Remaining_Instructions_After_Loss()
+    {
+      var grid = new Grid(2, 2);
+      var controller = new RobotController(grid, new CommandFactory());
+      var robot = new Robot(0, 2, EnumDirection.N);
+
+      // "FFFFFRL": Robot moves north, falls off after the first move, rest are ignored.
+      var result = controller.RunRobot(robot, "FFFFFRL");
+
+      Assert.Equal(0, result.Position.X);
+      Assert.Equal(2, result.Position.Y);
+      Assert.Equal(EnumDirection.N, result.Facing);
+      Assert.True(result.IsLost);
+    }
+
+    /// <summary>
+    /// Tests that if a robot starts its instructions on a position/direction where a scent exists,
+    /// but does not attempt a move off the grid, it is not lost. This confirms scents only apply when leaving the grid.
+    /// </summary>
+    [Fact]
+    public void Robot_Starting_On_Scent_Is_Not_Lost()
+    {
+      var grid = new Grid(2, 2);
+      var controller = new RobotController(grid, new CommandFactory());
+
+      // First robot leaves scent at (1,1,N) by falling off.
+      var lostRobot = new Robot(1, 1, EnumDirection.N);
+      controller.RunRobot(lostRobot, "F");
+
+      // New robot at same cell/direction, does nothing.
+      var robot = new Robot(1, 1, EnumDirection.N);
+      var result = controller.RunRobot(robot, "");
+
+      Assert.Equal(1, result.Position.X);
+      Assert.Equal(1, result.Position.Y);
+      Assert.Equal(EnumDirection.N, result.Facing);
+      Assert.False(result.IsLost);
+    }
+
+    /// <summary>
+    /// Verifies that a robot flagged as already lost does not execute any further instructions,
+    /// and its state does not change regardless of input. Defensive against double-lost bugs.
+    /// </summary>
+    [Fact]
+    public void Robot_Does_Not_Move_If_Already_Lost()
+    {
+      var grid = new Grid(5, 5);
+      var controller = new RobotController(grid, new CommandFactory());
+
+      // Robot already lost before running any instructions.
+      var robot = new Robot(0, 0, EnumDirection.S) { IsLost = true };
+
+      var result = controller.RunRobot(robot, "FFFFFRRRR");
+
+      // Assert: Stays at original position and remains lost.
+      Assert.Equal(0, result.Position.X);
+      Assert.Equal(0, result.Position.Y);
+      Assert.True(result.IsLost);
+    }
+
+    /// <summary>
+    /// Verifies that the robot can rotate and move through all directions, ending up back at the start.
+    /// This is a loopback test for a round-trip path with movement and turns.
+    /// </summary>
+    [Fact]
+    public void Robot_Can_Rotate_And_Move_Through_All_Directions()
+    {
+      var grid = new Grid(3, 3);
+      var controller = new RobotController(grid, new CommandFactory());
+      var robot = new Robot(1, 1, EnumDirection.N);
+
+      // RFRFRFRF: Turns and moves should form a loop.
+      var result = controller.RunRobot(robot, "RFRFRFRF");
+
+      Assert.Equal(1, result.Position.X);
+      Assert.Equal(1, result.Position.Y);
+      Assert.Equal(EnumDirection.N, result.Facing);
+      Assert.False(result.IsLost);
+    }
+
+    /// <summary>
+    /// Ensures that turn-only instructions (L and R) do not change the robot's position,
+    /// and after a complete sequence of turns, the robot ends up facing the original direction.
+    /// </summary>
+    [Fact]
+    public void Robot_Rotates_In_Place_With_Only_Turns()
+    {
+      var grid = new Grid(5, 5);
+      var controller = new RobotController(grid, new CommandFactory());
+      var robot = new Robot(2, 2, EnumDirection.N);
+
+      // RRLLRRLL: Full set of rotations, ends facing North.
+      var result = controller.RunRobot(robot, "RRLLRRLL");
+
+      Assert.Equal(2, result.Position.X);
+      Assert.Equal(2, result.Position.Y);
+      Assert.Equal(EnumDirection.N, result.Facing);
+      Assert.False(result.IsLost);
+    }
+
+    #endregion
   }
 }
